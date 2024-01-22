@@ -108,7 +108,7 @@ def main():
 		if 'ftp' in directory:
 			ftp_config = directory['ftp']
 			print(f"to FTP server <{ftp_config['host']}>");
-			create_ftp_backup(source_directory, destination_directory, max_backups, ftp_config["protocol"], ftp_config['host'], ftp_config['user'], ftp_config['password'])
+			name_of_backup = create_ftp_backup(source_directory, destination_directory, max_backups, ftp_config["protocol"], ftp_config['host'], ftp_config['user'], ftp_config['password'])
 		else:
 			free_space = get_free_space(destination_directory)
 			name_of_backup = create_local_backup(source_directory, destination_directory, max_backups, free_space)
