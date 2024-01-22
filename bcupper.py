@@ -1,6 +1,8 @@
 import os
 import tarfile
 import json
+from ftplib import FTP
+import pysftp
 from datetime import datetime
 
 def get_folder_size(path):
@@ -33,7 +35,7 @@ def delete_oldest_backup(destination):
 	print(f"Removed oldest backup <{oldest_backup}>");
 	return oldest_backup
 
-def create_backup(source, destination, max_backups, free_space):
+def create_local_backup(source, destination, max_backups, free_space):
 	if free_space < get_folder_size(source):
 		print("Not enough memory")
 		delete_oldest_backup(destination)
@@ -45,7 +47,47 @@ def create_backup(source, destination, max_backups, free_space):
 
 	check_and_delete_oldest_backup(destination, max_backups)
 	return backup_name
-	
+
+def get_ftp_connection(protocol, host, user, password):
+	if protocol == "sftp":
+		cnopts = pysftp.CnOpts()
+		cnopts.hostkeys = None
+		return pysftp.Connection(host, username=user, password=password, cnopts=cnopts)
+	else:
+		return FTP(host, user, password)
+
+def create_ftp_backup(source, destination, max_backups, ftp_protocol, ftp_host, ftp_user, ftp_password):
+	with get_ftp_connection(ftp_protocol, ftp_host, ftp_user, ftp_password) as ftp:
+		ftp.cwd(destination)
+
+		current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+		backup_name = f"{current_time}-{os.path.basename(source)}"
+		backup_path = os.path.join("/tmp", backup_name)
+		with tarfile.open(backup_path, 'w:gz') as tar:
+			tar.add(source, arcname=os.path.basename(source))
+
+		if ftp_protocol == "sftp":
+			ftp.put(backup_path, preserve_mtime=True)
+		else:
+			with open(backup_path, 'rb') as file:
+				ftp.storbinary(f"STOR {backup_name}", file)
+
+		os.remove(backup_path)
+
+		if ftp_protocol == "sftp":
+			ftp_backups = ftp.listdir()
+		else:
+			ftp_backups = ftp.nlst()
+
+		if len(ftp_backups) > max_backups:
+			if ftp_protocol == "sftp":
+				oldest_backup = min(ftp_backups, key=lambda x: ftp.stat(x).st_mtime)
+				ftp.remove(oldest_backup)
+			else:
+				oldest_backup = min(ftp_backups, key=lambda x: ftp.voidcmd(f"MDTM {x}"))
+				ftp.delete(oldest_backup)
+			print(f"Removed oldest backup <{oldest_backup}>");
+
 def main():
 	with open('config.json') as f:
 		config = json.load(f)
@@ -62,9 +104,14 @@ def main():
 
 		ensure_directory_exists(destination_directory)
 		max_backups = directory.get('max_backups', float('inf'))
-
-		free_space = get_free_space(destination_directory)
-		name_of_backup = create_backup(source_directory, destination_directory, max_backups, free_space)
+		
+		if 'ftp' in directory:
+			ftp_config = directory['ftp']
+			print(f"to FTP server <{ftp_config['host']}>");
+			create_ftp_backup(source_directory, destination_directory, max_backups, ftp_config["protocol"], ftp_config['host'], ftp_config['user'], ftp_config['password'])
+		else:
+			free_space = get_free_space(destination_directory)
+			name_of_backup = create_local_backup(source_directory, destination_directory, max_backups, free_space)
 
 		print(f"[SUCCESS] backup <{source_directory}> to <{destination_directory}> with name `{name_of_backup}` was created")
 

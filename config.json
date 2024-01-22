@@ -1,14 +1,20 @@
 {
     "directories": [
       {
-        "source": "/home/gmikcon/testdir",
-        "destination": "/run/media/gmikcon/Main space/tmp_test/testdir",
-        "max_backups": 3
+        "source": "/from/this/directory",
+        "destination": "/to/this/directory2",
+        "max_backups": 5
       },
       {
-        "source": "/srv/http",
-        "destination": "/run/media/gmikcon/Main space/tmp_test/http",
-        "max_backups": 2
+        "source": "/from/this/directory2",
+        "destination": "/to/this/directory2",
+        "max_backups": 3,
+        "ftp": {
+            "protocol": "sftp",
+            "host": "somehost.com",
+            "user": "username",
+            "password": "yourpassword"
+        }
       }
     ]
   }
