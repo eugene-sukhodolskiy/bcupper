@@ -1,0 +1,14 @@
+{
+    "directories": [
+      {
+        "source": "/home/gmikcon/testdir",
+        "destination": "/run/media/gmikcon/Main space/tmp_test/testdir",
+        "max_backups": 3
+      },
+      {
+        "source": "/srv/http",
+        "destination": "/run/media/gmikcon/Main space/tmp_test/http",
+        "max_backups": 2
+      }
+    ]
+  }
