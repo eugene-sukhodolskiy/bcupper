@@ -89,7 +89,7 @@ def create_ftp_backup(source, destination, max_backups, ftp_protocol, ftp_host, 
 			print(f"Removed oldest backup <{oldest_backup}>");
 
 def main():
-	with open('config.json') as f:
+	with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json') as f:
 		config = json.load(f)
 
 	for directory in config['directories']:
